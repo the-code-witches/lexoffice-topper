@@ -1,0 +1,12 @@
+services:
+  firebase-emulator:
+    image: andreysenov/firebase-tools:latest
+    ports:
+      - "4000:4000" # Emulator UI
+      - "5001:5001" # Functions
+      - "8080:8080" # Firestore (if needed)
+    volumes:
+      - .:/home/node/app
+    environment:
+      - FIREBASE_TOKEN=${FIREBASE_TOKEN}
+    command: firebase emulators:start --project demo-local
