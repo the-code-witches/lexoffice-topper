@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { loadConfig } from "@/lib/config";
-import { getLexofficeData } from "@/lib/data";
-import { buildUncategorized } from "@/lib/calculations";
+import { getLexofficeData, buildUncategorized } from "@/lib/data";
 
 export async function GET() {
   try {

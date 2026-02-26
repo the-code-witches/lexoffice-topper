@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadConfig, saveConfig } from "@/lib/config";
 import { getCache } from "@/lib/cache";
-import { buildUncategorized } from "@/lib/calculations";
+import { buildUncategorized } from "@/lib/data";
 
 export async function POST(req: NextRequest) {
   try {
