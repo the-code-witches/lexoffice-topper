@@ -118,19 +118,20 @@ export async function fetchAllVouchers(
   return results;
 }
 
-/** Fetch full details for a single voucher (includes net/gross/tax breakdown). */
-export async function fetchVoucherDetail(id: string): Promise<VoucherDetail> {
-  return get<VoucherDetail>(`/vouchers/${id}`);
+/** Fetch detail for a single voucher, routing to the correct endpoint by type. */
+export async function fetchVoucherDetail(item: Pick<VoucherListItem, "id" | "voucherType">): Promise<VoucherDetail> {
+  // Lexoffice uses /invoices/{id} for type "invoice", /vouchers/{id} for everything else
+  const path = item.voucherType === "invoice" ? `/invoices/${item.id}` : `/vouchers/${item.id}`;
+  return get<VoucherDetail>(path);
 }
 
-/** Fetch details for many vouchers sequentially (rate limiting handled globally in get()). */
+/** Fetch details for many vouchers sequentially, routing each by its type. */
 export async function fetchVoucherDetails(
-  ids: string[]
+  items: Pick<VoucherListItem, "id" | "voucherType">[]
 ): Promise<Map<string, VoucherDetail>> {
   const result = new Map<string, VoucherDetail>();
-  for (const id of ids) {
-    const detail = await fetchVoucherDetail(id);
-    result.set(id, detail);
+  for (const item of items) {
+    result.set(item.id, await fetchVoucherDetail(item));
   }
   return result;
 }

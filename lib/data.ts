@@ -7,16 +7,16 @@ export async function getLexofficeData(): Promise<LexofficeData> {
   if (hit) return hit;
 
   // Sequential fetches — rate limiter in lexoffice.ts enforces 700ms between each request
-  const incomeVouchers = await fetchAllVouchers(["salesinvoice"], {
-    voucherStatus: "paid,open,paidoff",
+  const incomeVouchers = await fetchAllVouchers(["invoice", "salesinvoice"], {
+    voucherStatus: "draft,open,paid,paidoff,transferred",
   });
 
   const expenseVouchers = await fetchAllVouchers(["purchaseinvoice"], {
     voucherStatus: "open,paid,paidoff",
   });
 
-  const incomeDetailsMap = await fetchVoucherDetails(incomeVouchers.map((v) => v.id));
-  const expenseDetailsMap = await fetchVoucherDetails(expenseVouchers.map((v) => v.id));
+  const incomeDetailsMap = await fetchVoucherDetails(incomeVouchers);
+  const expenseDetailsMap = await fetchVoucherDetails(expenseVouchers);
 
   const toRecord = (m: Map<string, VoucherDetail>): Record<string, VoucherDetail> =>
     Object.fromEntries(m.entries());
