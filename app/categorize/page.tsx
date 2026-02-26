@@ -90,8 +90,15 @@ export default function CategorizePage() {
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error ?? "Fehler");
+
       setRuleTarget(null);
-      await load();
+
+      // Use the updated list returned from the server — no Lexoffice re-fetch
+      if (data.uncategorized !== null) {
+        setVouchers(data.uncategorized);
+      } else {
+        await load();
+      }
     } catch (e) {
       alert(String(e));
     } finally {
@@ -153,7 +160,6 @@ export default function CategorizePage() {
                   </div>
                 </div>
 
-                {/* Assign buttons */}
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat) => (
                     <CategoryButton
@@ -164,7 +170,6 @@ export default function CategorizePage() {
                     />
                   ))}
 
-                  {/* As rule button (only if there's a contact name) */}
                   {v.contactName && (
                     <button
                       onClick={() =>
@@ -181,7 +186,6 @@ export default function CategorizePage() {
                   )}
                 </div>
 
-                {/* Rule form */}
                 {ruleTarget?.voucherId === v.id && (
                   <div className="mt-3 rounded-lg border border-gray-700 bg-gray-800 p-4 space-y-3">
                     <p className="text-xs text-gray-400">

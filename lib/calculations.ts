@@ -1,4 +1,5 @@
 import type { AppConfig, PersonConfig, Withdrawal } from "./config";
+import { categorizeVoucher } from "./config";
 import type { VoucherDetail, VoucherListItem } from "./lexoffice";
 
 export interface PersonBudgetSummary {
@@ -162,6 +163,30 @@ export function formatEur(amount: number): string {
     style: "currency",
     currency: "EUR",
   }).format(amount);
+}
+
+/** Build the uncategorized expense list from cached data + current config. */
+export function buildUncategorized(
+  config: AppConfig,
+  expenseVouchers: VoucherListItem[],
+  expenseDetails: Record<string, VoucherDetail>
+) {
+  return expenseVouchers
+    .map((v) => {
+      const detail = expenseDetails[v.id];
+      const category = categorizeVoucher(config, v.id, v.contactName, detail?.remark);
+      return {
+        id: v.id,
+        voucherNumber: v.voucherNumber,
+        voucherDate: v.voucherDate,
+        contactName: v.contactName,
+        remark: detail?.remark,
+        netAmount: detail?.totalPrice?.totalNetAmount ?? v.totalAmount,
+        grossAmount: detail?.totalPrice?.totalGrossAmount ?? v.totalAmount,
+        category,
+      };
+    })
+    .filter((v) => v.category === null);
 }
 
 /** Build the flat categorized expense list from voucher list + details + config. */

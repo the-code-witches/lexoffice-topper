@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CacheStatus } from "@/components/CacheStatus";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({
             <Link href="/categorize" className="text-sm text-gray-400 hover:text-white transition-colors">
               Kategorisieren
             </Link>
+            <CacheStatus />
           </div>
         </nav>
         <main className="max-w-6xl mx-auto px-6 py-8">
