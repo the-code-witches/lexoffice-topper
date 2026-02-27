@@ -12,6 +12,7 @@ interface TotalSummary {
   kontostand: {
     netIncome: number;
     taxOwed: number;
+    inputTax: number;
     taxPaid: number;
     totalWithdrawals: number;
     totalExpenses: number;
@@ -65,7 +66,8 @@ export default function TotalPage() {
   if (!data) return null;
 
   const { kontostand, personBudgets, internal, withdrawals } = data;
-  const taxOwedRemaining = kontostand.taxOwed - kontostand.taxPaid;
+  // Zahllast = Umsatzsteuer − Vorsteuer − bereits gezahlte Vorauszahlungen
+  const taxOwedRemaining = kontostand.taxOwed - kontostand.inputTax - kontostand.taxPaid;
   const available = kontostand.netIncome - kontostand.totalWithdrawals - kontostand.totalExpenses;
 
   return (
@@ -85,7 +87,7 @@ export default function TotalPage() {
             label="MwSt. noch ausstehend"
             value={formatEur(taxOwedRemaining)}
             accent="yellow"
-            sub={kontostand.taxPaid > 0 ? `${formatEur(kontostand.taxPaid)} bereits gezahlt` : "Nicht ausgeben!"}
+            sub={`${formatEur(kontostand.taxOwed)} USt − ${formatEur(kontostand.inputTax)} VSt${kontostand.taxPaid > 0 ? ` − ${formatEur(kontostand.taxPaid)} gezahlt` : ""}`}
           />
           <StatCard
             label="Gesamt Entnahmen"

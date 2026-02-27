@@ -32,8 +32,10 @@ export interface MonthlyInternalSummary {
 export interface KontostandBreakdown {
   /** Sum of totalNetAmount across all income vouchers */
   netIncome: number;
-  /** Sum of totalTaxAmount across all income vouchers */
+  /** Sum of totalTaxAmount across all income vouchers (Umsatzsteuer) */
   taxOwed: number;
+  /** Sum of totalTaxAmount across all expense vouchers (Vorsteuer — reduces taxOwed) */
+  inputTax: number;
   /** Sum of quarterly VAT payments already made (category "tax") — reduces taxOwed */
   taxPaid: number;
   /** Sum of all recorded withdrawals */
@@ -78,8 +80,8 @@ export function calcKontostand(
     0
   );
   const totalWithdrawals = withdrawals.reduce((s, w) => s + w.amount, 0);
-  // totalExpenses and taxPaid are filled in by the caller (need categorized data)
-  return { netIncome, taxOwed, taxPaid: 0, totalWithdrawals, totalExpenses: 0 };
+  // inputTax, totalExpenses and taxPaid are filled in by the caller (need expense data)
+  return { netIncome, taxOwed, inputTax: 0, taxPaid: 0, totalWithdrawals, totalExpenses: 0 };
 }
 
 export function calcPersonBudgets(

@@ -24,6 +24,11 @@ export async function GET() {
       (e): e is typeof e & { category: string } => e.category !== null && e.category !== "tax"
     );
 
+    // Vorsteuer: sum of VAT paid on all expense vouchers (deductible from Umsatzsteuer)
+    kontostand.inputTax = expenseVouchers.reduce(
+      (s, v) => s + (expenseDetails[v.id]?.totalPrice?.totalTaxAmount ?? 0),
+      0
+    );
     kontostand.taxPaid = taxExpenses.reduce((s, e) => s + e.amount, 0);
     kontostand.totalExpenses = categorized.reduce((s, e) => s + e.amount, 0);
 

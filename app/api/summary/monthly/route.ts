@@ -45,6 +45,12 @@ export async function GET(req: NextRequest) {
       (e): e is typeof e & { category: string } => e.category !== null && e.category !== "tax"
     );
 
+    // Vorsteuer: VAT paid on expenses this month (deductible from Umsatzsteuer)
+    const inputTax = monthExpenseVouchers.reduce(
+      (s, v) => s + (expenseDetails[v.id]?.totalPrice?.totalTaxAmount ?? 0),
+      0
+    );
+
     const personSummaries = calcMonthlyPersonSummaries(config, month, categorized);
     const internalSummary = calcMonthlyInternal(config, month, categorized);
     const monthWithdrawals = config.withdrawals.filter((w) => w.date.startsWith(month));
@@ -53,6 +59,7 @@ export async function GET(req: NextRequest) {
       month,
       netIncome,
       taxAmount,
+      inputTax,
       taxPaid,
       personSummaries,
       internalSummary,
