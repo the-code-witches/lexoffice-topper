@@ -37,8 +37,12 @@ export async function GET(req: NextRequest) {
       expenseDetailsMap,
       (id, contactName, remark) => categorizeVoucher(config, id, contactName, remark)
     );
+    // "tax" category = quarterly VAT payments — separate from regular expenses
+    const taxPaid = allExpenses
+      .filter((e) => e.category === "tax")
+      .reduce((s, e) => s + e.amount, 0);
     const categorized = allExpenses.filter(
-      (e): e is typeof e & { category: string } => e.category !== null
+      (e): e is typeof e & { category: string } => e.category !== null && e.category !== "tax"
     );
 
     const personSummaries = calcMonthlyPersonSummaries(config, month, categorized);
@@ -49,6 +53,7 @@ export async function GET(req: NextRequest) {
       month,
       netIncome,
       taxAmount,
+      taxPaid,
       personSummaries,
       internalSummary,
       withdrawals: monthWithdrawals,

@@ -18,10 +18,13 @@ export async function GET() {
       expenseDetailsMap,
       (id, contactName, remark) => categorizeVoucher(config, id, contactName, remark)
     );
+    // "tax" category = quarterly VAT payments — they offset taxOwed, not regular expenses
+    const taxExpenses = allExpenses.filter((e) => e.category === "tax");
     const categorized = allExpenses.filter(
-      (e): e is typeof e & { category: string } => e.category !== null
+      (e): e is typeof e & { category: string } => e.category !== null && e.category !== "tax"
     );
 
+    kontostand.taxPaid = taxExpenses.reduce((s, e) => s + e.amount, 0);
     kontostand.totalExpenses = categorized.reduce((s, e) => s + e.amount, 0);
 
     const allDates = [

@@ -122,7 +122,23 @@ export async function fetchAllVouchers(
 export async function fetchVoucherDetail(item: Pick<VoucherListItem, "id" | "voucherType">): Promise<VoucherDetail> {
   // Lexoffice uses /invoices/{id} for type "invoice", /vouchers/{id} for everything else
   const path = item.voucherType === "invoice" ? `/invoices/${item.id}` : `/vouchers/${item.id}`;
-  return get<VoucherDetail>(path);
+  const raw = await get<Record<string, unknown>>(path);
+
+  // /vouchers/{id} returns totalGrossAmount and totalTaxAmount at the root level (no totalPrice wrapper).
+  // /invoices/{id} returns the proper totalPrice object. Normalize voucher responses here so the
+  // rest of the codebase can always use detail.totalPrice.totalNetAmount uniformly.
+  if (!("totalPrice" in raw)) {
+    const gross = (raw.totalGrossAmount as number) ?? 0;
+    const tax = (raw.totalTaxAmount as number) ?? 0;
+    raw.totalPrice = {
+      currency: "EUR",
+      totalGrossAmount: gross,
+      totalTaxAmount: tax,
+      totalNetAmount: Math.round((gross - tax) * 100) / 100,
+    } satisfies TotalPrice;
+  }
+
+  return raw as unknown as VoucherDetail;
 }
 
 /** Fetch details for many vouchers sequentially, routing each by its type. */

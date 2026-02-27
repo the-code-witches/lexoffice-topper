@@ -12,6 +12,7 @@ interface MonthlySummary {
   month: string;
   netIncome: number;
   taxAmount: number;
+  taxPaid: number;
   personSummaries: MonthlyPersonSummary[];
   internalSummary: MonthlyInternalSummary;
   withdrawals: Withdrawal[];
@@ -85,10 +86,10 @@ export default function MonthlyPage() {
             <div className="grid grid-cols-2 gap-4">
               <StatCard label="Netto Einnahmen" value={formatEur(data.netIncome)} accent="green" />
               <StatCard
-                label="Umsatzsteuer"
-                value={formatEur(data.taxAmount)}
+                label={data.taxPaid > 0 ? "MwSt. noch ausstehend" : "Umsatzsteuer"}
+                value={formatEur(data.taxAmount - data.taxPaid)}
                 accent="yellow"
-                sub="Nicht ausgeben!"
+                sub={data.taxPaid > 0 ? `${formatEur(data.taxPaid)} gezahlt` : "Nicht ausgeben!"}
               />
             </div>
           </section>

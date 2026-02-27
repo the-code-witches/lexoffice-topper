@@ -67,6 +67,7 @@ export default function CategorizePage() {
     ? [
         ...config.people.map((p) => ({ id: p.id, label: p.name })),
         { id: "internal", label: config.internal.name },
+        { id: "tax", label: "Steuer (USt-Zahlung)" },
       ]
     : [];
 

@@ -34,9 +34,11 @@ export interface KontostandBreakdown {
   netIncome: number;
   /** Sum of totalTaxAmount across all income vouchers */
   taxOwed: number;
+  /** Sum of quarterly VAT payments already made (category "tax") — reduces taxOwed */
+  taxPaid: number;
   /** Sum of all recorded withdrawals */
   totalWithdrawals: number;
-  /** Sum of all expenses (purchase invoices) */
+  /** Sum of all regular expenses (purchase invoices, excl. tax payments) */
   totalExpenses: number;
 }
 
@@ -76,8 +78,8 @@ export function calcKontostand(
     0
   );
   const totalWithdrawals = withdrawals.reduce((s, w) => s + w.amount, 0);
-  // totalExpenses will be filled in by the caller since it needs categorized data
-  return { netIncome, taxOwed, totalWithdrawals, totalExpenses: 0 };
+  // totalExpenses and taxPaid are filled in by the caller (need categorized data)
+  return { netIncome, taxOwed, taxPaid: 0, totalWithdrawals, totalExpenses: 0 };
 }
 
 export function calcPersonBudgets(
