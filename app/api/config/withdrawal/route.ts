@@ -4,8 +4,9 @@ import { loadConfig, saveConfig } from "@/lib/config";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { date, amount, person_id, note } = body as {
+    const { date, value_date, amount, person_id, note } = body as {
       date: string;
+      value_date?: string;
       amount: number;
       person_id: string;
       note?: string;
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const config = loadConfig();
-    config.withdrawals.push({ date, amount, person_id, note });
+    config.withdrawals.push({ date, ...(value_date ? { value_date } : {}), amount, person_id, note });
     saveConfig(config);
     return NextResponse.json({ ok: true });
   } catch (e) {

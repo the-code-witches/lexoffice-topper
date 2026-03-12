@@ -10,8 +10,14 @@ export function WithdrawalForm({
   people: PersonConfig[];
   onSaved: () => void;
 }) {
+  function lastDayOfPrevMonth() {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 0).toISOString().slice(0, 10);
+  }
+
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [valueDate, setValueDate] = useState(lastDayOfPrevMonth());
   const [amount, setAmount] = useState("");
   const [personId, setPersonId] = useState(people[0]?.id ?? "");
   const [note, setNote] = useState("");
@@ -25,7 +31,7 @@ export function WithdrawalForm({
       const res = await fetch("/api/config/withdrawal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, amount: parseFloat(amount), person_id: personId, note }),
+        body: JSON.stringify({ date, value_date: valueDate !== date ? valueDate : undefined, amount: parseFloat(amount), person_id: personId, note }),
       });
       if (!res.ok) {
         const j = await res.json();
@@ -34,6 +40,7 @@ export function WithdrawalForm({
       setOpen(false);
       setAmount("");
       setNote("");
+      setValueDate(lastDayOfPrevMonth());
       onSaved();
     } catch (e) {
       setError(String(e));
@@ -59,11 +66,20 @@ export function WithdrawalForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-xs text-gray-400 block mb-1">Datum</label>
+          <label className="text-xs text-gray-400 block mb-1">Überweisungsdatum</label>
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
+            className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 block mb-1">Gilt für (Wertdatum)</label>
+          <input
+            type="date"
+            value={valueDate}
+            onChange={(e) => setValueDate(e.target.value)}
             className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white"
           />
         </div>
