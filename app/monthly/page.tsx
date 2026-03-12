@@ -8,6 +8,15 @@ import { formatEur } from "@/lib/calculations";
 import type { PersonConfig, Withdrawal } from "@/lib/config";
 import type { MonthlyPersonSummary, MonthlyInternalSummary } from "@/lib/calculations";
 
+interface CategorizedExpense {
+  voucherId: string;
+  category: string;
+  amount: number;
+  date: string;
+  contactName?: string;
+  remark?: string;
+}
+
 interface MonthlySummary {
   month: string;
   netIncome: number;
@@ -17,6 +26,7 @@ interface MonthlySummary {
   personSummaries: MonthlyPersonSummary[];
   internalSummary: MonthlyInternalSummary;
   withdrawals: Withdrawal[];
+  categorizedExpenses: CategorizedExpense[];
 }
 
 function currentMonth() {
@@ -26,6 +36,7 @@ function currentMonth() {
 
 export default function MonthlyPage() {
   const [month, setMonth] = useState(currentMonth());
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [data, setData] = useState<MonthlySummary | null>(null);
   const [people, setPeople] = useState<PersonConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,10 +119,20 @@ export default function MonthlyPage() {
                 </div>
               ))}
               <div className="flex items-center justify-between px-5 py-4 bg-gray-800/40">
-                <span className="text-gray-400 font-medium">Gesamt</span>
-                <span className="text-red-400 font-semibold">
-                  {formatEur(data.withdrawals.reduce((s, w) => s + w.amount, 0))}
-                </span>
+                {(() => {
+                  const amounts = data.personSummaries.map((ps) => ps.withdrawals);
+                  const allEqual = amounts.every((a) => a === amounts[0]);
+                  const diff = amounts.length === 2 ? Math.abs(amounts[0] - amounts[1]) : 0;
+                  const total = data.withdrawals.reduce((s, w) => s + w.amount, 0);
+                  return (
+                    <>
+                      <span className="text-gray-400 font-medium">
+                        {allEqual ? "✓ Ausgeglichen" : `Differenz: ${formatEur(diff)}`}
+                      </span>
+                      <span className="text-red-400 font-semibold">{formatEur(total)}</span>
+                    </>
+                  );
+                })()}
               </div>
             </div>
             <div className="mt-4">
@@ -125,20 +146,52 @@ export default function MonthlyPage() {
               Budgets {monthLabel}
             </h2>
             <div className="space-y-3">
-              {data.personSummaries.map((ps) => (
-                <BudgetBar
-                  key={ps.person.id}
-                  label={ps.person.name}
-                  spent={ps.expenses}
-                  budget={ps.budget}
-                  sub={`${formatEur(ps.expenses)} Ausgaben von ${formatEur(ps.budget)}`}
-                />
-              ))}
-              <BudgetBar
-                label={data.internalSummary.name}
-                spent={data.internalSummary.expenses}
-                budget={data.internalSummary.budget}
-              />
+              {[
+                ...data.personSummaries.map((ps) => ({ id: ps.person.id, label: ps.person.name, spent: ps.expenses, budget: ps.budget, sub: `${formatEur(ps.expenses)} Ausgaben von ${formatEur(ps.budget)}` })),
+                { id: "internal", label: data.internalSummary.name, spent: data.internalSummary.expenses, budget: data.internalSummary.budget, sub: undefined },
+              ].map((entry) => {
+                const expenses = data.categorizedExpenses.filter((e) => e.category === entry.id).sort((a, b) => b.date.localeCompare(a.date));
+                const isExpanded = expandedCategory === entry.id;
+                return (
+                  <div key={entry.id}>
+                    <BudgetBar
+                      label={entry.label}
+                      spent={entry.spent}
+                      budget={entry.budget}
+                      sub={entry.sub}
+                      onClick={() => setExpandedCategory(isExpanded ? null : entry.id)}
+                      expanded={isExpanded}
+                    />
+                    {isExpanded && expenses.length > 0 && (
+                      <div className="mt-1 rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-800 text-left">
+                              <th className="px-4 py-2 text-gray-500 font-normal">Datum</th>
+                              <th className="px-4 py-2 text-gray-500 font-normal">Lieferant</th>
+                              <th className="px-4 py-2 text-gray-500 font-normal">Notiz</th>
+                              <th className="px-4 py-2 text-gray-500 font-normal text-right">Betrag</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-800">
+                            {expenses.map((e) => (
+                              <tr key={e.voucherId} className="hover:bg-gray-800/40">
+                                <td className="px-4 py-2 text-gray-400">{e.date.slice(0, 10)}</td>
+                                <td className="px-4 py-2 text-gray-300">{e.contactName ?? "—"}</td>
+                                <td className="px-4 py-2 text-gray-500 truncate max-w-xs">{e.remark ?? "—"}</td>
+                                <td className="px-4 py-2 text-right text-gray-300">{formatEur(e.amount)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {isExpanded && expenses.length === 0 && (
+                      <p className="mt-1 px-4 py-3 text-sm text-gray-500">Keine Ausgaben.</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
         </>

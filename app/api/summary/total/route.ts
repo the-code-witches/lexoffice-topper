@@ -83,6 +83,7 @@ export async function GET(req: NextRequest) {
         totalExpenses: internalExpenses,
       },
       withdrawals: filteredWithdrawals,
+      categorizedExpenses: categorized,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

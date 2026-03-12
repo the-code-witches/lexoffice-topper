@@ -8,6 +8,15 @@ import { formatEur } from "@/lib/calculations";
 import type { PersonConfig, Withdrawal } from "@/lib/config";
 import type { PersonBudgetSummary } from "@/lib/calculations";
 
+interface CategorizedExpense {
+  voucherId: string;
+  category: string;
+  amount: number;
+  date: string;
+  contactName?: string;
+  remark?: string;
+}
+
 interface TotalSummary {
   year: string | null;
   availableYears: string[];
@@ -26,10 +35,12 @@ interface TotalSummary {
     totalExpenses: number;
   };
   withdrawals: Withdrawal[];
+  categorizedExpenses: CategorizedExpense[];
 }
 
 export default function TotalPage() {
   const [selectedYear, setSelectedYear] = useState<string>("");
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [data, setData] = useState<TotalSummary | null>(null);
   const [people, setPeople] = useState<PersonConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,23 +195,52 @@ export default function TotalPage() {
       <section>
         <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-4">Ausgabenbudgets gesamt</h2>
         <div className="space-y-3">
-          {personBudgets.map((pb) => (
-            <BudgetBar
-              key={pb.person.id}
-              label={pb.person.name}
-              spent={pb.totalExpenses}
-              budget={pb.totalAllocated}
-              sub={`${formatEur(pb.person.monthly_budget)}/Monat · ${formatEur(pb.totalExpenses)} Ausgaben`}
-            />
-          ))}
-          <BudgetBar
-            label={internal.name}
-            spent={internal.totalExpenses}
-            budget={internal.monthlyBudget * (personBudgets[0]?.totalAllocated
-              ? Math.round(personBudgets[0].totalAllocated / personBudgets[0].monthlyBudget)
-              : 1)}
-            sub={`${formatEur(internal.monthlyBudget)}/Monat`}
-          />
+          {[
+            ...personBudgets.map((pb) => ({ id: pb.person.id, label: pb.person.name, spent: pb.totalExpenses, budget: pb.totalAllocated, sub: `${formatEur(pb.person.monthly_budget)}/Monat · ${formatEur(pb.totalExpenses)} Ausgaben` })),
+            { id: "internal", label: internal.name, spent: internal.totalExpenses, budget: internal.monthlyBudget * (personBudgets[0]?.totalAllocated ? Math.round(personBudgets[0].totalAllocated / personBudgets[0].monthlyBudget) : 1), sub: `${formatEur(internal.monthlyBudget)}/Monat` },
+          ].map((entry) => {
+            const expenses = data.categorizedExpenses.filter((e) => e.category === entry.id).sort((a, b) => b.date.localeCompare(a.date));
+            const isExpanded = expandedCategory === entry.id;
+            return (
+              <div key={entry.id}>
+                <BudgetBar
+                  label={entry.label}
+                  spent={entry.spent}
+                  budget={entry.budget}
+                  sub={entry.sub}
+                  onClick={() => setExpandedCategory(isExpanded ? null : entry.id)}
+                  expanded={isExpanded}
+                />
+                {isExpanded && expenses.length > 0 && (
+                  <div className="mt-1 rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-800 text-left">
+                          <th className="px-4 py-2 text-gray-500 font-normal">Datum</th>
+                          <th className="px-4 py-2 text-gray-500 font-normal">Lieferant</th>
+                          <th className="px-4 py-2 text-gray-500 font-normal">Notiz</th>
+                          <th className="px-4 py-2 text-gray-500 font-normal text-right">Betrag</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        {expenses.map((e) => (
+                          <tr key={e.voucherId} className="hover:bg-gray-800/40">
+                            <td className="px-4 py-2 text-gray-400">{e.date.slice(0, 10)}</td>
+                            <td className="px-4 py-2 text-gray-300">{e.contactName ?? "—"}</td>
+                            <td className="px-4 py-2 text-gray-500 truncate max-w-xs">{e.remark ?? "—"}</td>
+                            <td className="px-4 py-2 text-right text-gray-300">{formatEur(e.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {isExpanded && expenses.length === 0 && (
+                  <p className="mt-1 px-4 py-3 text-sm text-gray-500">Keine Ausgaben.</p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>

@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
       personSummaries,
       internalSummary,
       withdrawals: monthWithdrawals,
+      categorizedExpenses: categorized,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
