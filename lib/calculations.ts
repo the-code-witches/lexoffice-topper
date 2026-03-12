@@ -51,13 +51,13 @@ export function isoMonth(date: string): string {
   return date.slice(0, 7); // "YYYY-MM"
 }
 
-/** Returns an array of "YYYY-MM" strings from the earliest voucher/withdrawal to now. */
-export function monthsElapsed(earliestDate: string): string[] {
+/** Returns an array of "YYYY-MM" strings from the earliest to latest date (defaults to now). */
+export function monthsElapsed(earliestDate: string, latestDate?: string): string[] {
   const start = new Date(earliestDate + "-01");
-  const now = new Date();
+  const end = latestDate ? new Date(latestDate + "-01") : new Date();
   const months: string[] = [];
   const cur = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (cur <= now) {
+  while (cur <= end) {
     months.push(
       `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`
     );
@@ -88,8 +88,11 @@ export function calcKontostand(
 export function calcPersonBudgets(
   config: AppConfig,
   categorizedExpenses: { voucherId: string; category: string; amount: number; date: string }[],
-  allDates: string[] // all relevant dates to determine months elapsed
+  allDates: string[], // all relevant dates to determine months elapsed
+  latestDate?: string, // optional upper bound for months elapsed (e.g. for year filter)
+  withdrawals?: Withdrawal[] // optional pre-filtered withdrawals (defaults to config.withdrawals)
 ): PersonBudgetSummary[] {
+  const effectiveWithdrawals = withdrawals ?? config.withdrawals;
   if (allDates.length === 0) {
     return config.people.map((p) => ({
       person: p,
@@ -102,12 +105,12 @@ export function calcPersonBudgets(
   }
 
   const earliest = allDates.slice().sort()[0].slice(0, 7); // "YYYY-MM"
-  const months = monthsElapsed(earliest);
+  const months = monthsElapsed(earliest, latestDate);
   const numMonths = months.length;
 
   return config.people.map((person) => {
     const totalAllocated = person.monthly_budget * numMonths;
-    const totalWithdrawals = config.withdrawals
+    const totalWithdrawals = effectiveWithdrawals
       .filter((w) => w.person_id === person.id)
       .reduce((s, w) => s + w.amount, 0);
     const totalExpenses = categorizedExpenses

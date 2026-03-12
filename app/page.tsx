@@ -9,6 +9,8 @@ import type { PersonConfig, Withdrawal } from "@/lib/config";
 import type { PersonBudgetSummary } from "@/lib/calculations";
 
 interface TotalSummary {
+  year: string | null;
+  availableYears: string[];
   kontostand: {
     netIncome: number;
     taxOwed: number;
@@ -27,17 +29,19 @@ interface TotalSummary {
 }
 
 export default function TotalPage() {
+  const [selectedYear, setSelectedYear] = useState<string>("");
   const [data, setData] = useState<TotalSummary | null>(null);
   const [people, setPeople] = useState<PersonConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (year?: string) => {
     setLoading(true);
     setError("");
     try {
+      const url = year ? `/api/summary/total?year=${year}` : "/api/summary/total";
       const [summary, config] = await Promise.all([
-        fetch("/api/summary/total").then((r) => r.json()),
+        fetch(url).then((r) => r.json()),
         fetch("/api/config").then((r) => r.json()),
       ]);
       if (summary.error) throw new Error(summary.error);
@@ -50,7 +54,7 @@ export default function TotalPage() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(selectedYear || undefined); }, [load, selectedYear]);
 
   if (loading) {
     return <p className="text-gray-500 animate-pulse">Lade Daten von Lexoffice…</p>;
@@ -72,7 +76,19 @@ export default function TotalPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold text-white">Gesamtübersicht</h1>
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-semibold text-white">Gesamtübersicht</h1>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+          className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white"
+        >
+          <option value="">Alle Jahre</option>
+          {(data?.availableYears ?? []).map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Kontostand */}
       <section>
@@ -114,8 +130,19 @@ export default function TotalPage() {
             </div>
           ))}
           <div className="flex items-center justify-between px-5 py-4 bg-gray-800/40">
-            <span className="text-gray-400 font-medium">Gesamt</span>
-            <span className="text-red-400 font-semibold">{formatEur(kontostand.totalWithdrawals)}</span>
+            {(() => {
+              const amounts = personBudgets.map((pb) => pb.totalWithdrawals);
+              const allEqual = amounts.every((a) => a === amounts[0]);
+              const diff = amounts.length === 2 ? Math.abs(amounts[0] - amounts[1]) : 0;
+              return (
+                <>
+                  <span className="text-gray-400 font-medium">
+                    {allEqual ? "✓ Ausgeglichen" : `Differenz: ${formatEur(diff)}`}
+                  </span>
+                  <span className="text-red-400 font-semibold">{formatEur(kontostand.totalWithdrawals)}</span>
+                </>
+              );
+            })()}
           </div>
         </div>
 
