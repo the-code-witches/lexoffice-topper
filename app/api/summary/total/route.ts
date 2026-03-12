@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       ? expenseVouchers.filter((v) => v.voucherDate.startsWith(year))
       : expenseVouchers;
     const filteredWithdrawals = year
-      ? config.withdrawals.filter((w) => w.date.startsWith(year))
+      ? config.withdrawals.filter((w) => (w.value_date ?? w.date).startsWith(year))
       : config.withdrawals;
 
     const incomeDetailsArr = filteredIncomeVouchers.map((v) => incomeDetails[v.id]).filter(Boolean);

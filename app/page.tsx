@@ -182,7 +182,12 @@ export default function TotalPage() {
                   const person = people.find((p) => p.id === w.person_id);
                   return (
                     <tr key={i} className="hover:bg-gray-800/40">
-                      <td className="px-4 py-3 text-gray-300">{w.date}</td>
+                      <td className="px-4 py-3 text-gray-300">
+                        {w.date}
+                        {w.value_date && w.value_date !== w.date && (
+                          <span className="block text-xs text-gray-500">für {w.value_date.slice(0, 7)}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-gray-300">{person?.name ?? w.person_id}</td>
                       <td className="px-4 py-3 text-gray-500">{w.note ?? "—"}</td>
                       <td className="px-4 py-3 text-right text-red-400">{formatEur(w.amount)}</td>

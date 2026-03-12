@@ -27,7 +27,8 @@ export interface VoucherCategorization {
 }
 
 export interface Withdrawal {
-  date: string; // ISO date string YYYY-MM-DD
+  date: string;       // actual transfer date (for display)
+  value_date?: string; // date used for calculation (e.g. last day of the month it applies to)
   amount: number;
   person_id: string;
   note?: string;

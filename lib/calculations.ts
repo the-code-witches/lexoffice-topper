@@ -134,7 +134,7 @@ export function calcMonthlyPersonSummaries(
 ): MonthlyPersonSummary[] {
   return config.people.map((person) => {
     const withdrawals = config.withdrawals
-      .filter((w) => w.person_id === person.id && w.date.startsWith(month))
+      .filter((w) => w.person_id === person.id && (w.value_date ?? w.date).startsWith(month))
       .reduce((s, w) => s + w.amount, 0);
     const expenses = categorizedExpenses
       .filter((e) => e.category === person.id && e.date.startsWith(month))

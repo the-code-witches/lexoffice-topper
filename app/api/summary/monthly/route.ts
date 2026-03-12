@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       .filter((e) => e.date.startsWith(month));
     const personSummaries = calcMonthlyPersonSummaries(config, month, calcExpenses);
     const internalSummary = calcMonthlyInternal(config, month, calcExpenses);
-    const monthWithdrawals = config.withdrawals.filter((w) => w.date.startsWith(month));
+    const monthWithdrawals = config.withdrawals.filter((w) => (w.value_date ?? w.date).startsWith(month));
 
     // Build display expenses: one entry per voucher active this month,
     // with amountForCalc = portion used (differs from amount only for splits)
