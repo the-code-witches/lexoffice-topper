@@ -10,7 +10,7 @@ export interface PersonBudgetSummary {
   totalWithdrawals: number;
   /** Total expenses categorized to this person */
   totalExpenses: number;
-  /** How much is "saved" = allocated - withdrawals - expenses */
+  /** How much budget is left = allocated - expenses (withdrawals are tracked separately) */
   totalRemaining: number;
 }
 
@@ -19,6 +19,7 @@ export interface MonthlyPersonSummary {
   budget: number;
   withdrawals: number;
   expenses: number;
+  /** Remaining budget = budget - expenses (withdrawals are tracked separately) */
   remaining: number;
 }
 
@@ -118,7 +119,7 @@ export function calcPersonBudgets(
       totalAllocated,
       totalWithdrawals,
       totalExpenses,
-      totalRemaining: totalAllocated - totalWithdrawals - totalExpenses,
+      totalRemaining: totalAllocated - totalExpenses,
     };
   });
 }
@@ -140,7 +141,7 @@ export function calcMonthlyPersonSummaries(
       budget: person.monthly_budget,
       withdrawals,
       expenses,
-      remaining: person.monthly_budget - withdrawals - expenses,
+      remaining: person.monthly_budget - expenses,
     };
   });
 }

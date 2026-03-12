@@ -153,7 +153,7 @@ export default function TotalPage() {
         )}
       </section>
 
-      {/* Budget overview */}
+      {/* Budget overview — expenses only, withdrawals are separate */}
       <section>
         <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-4">Ausgabenbudgets gesamt</h2>
         <div className="space-y-3">
@@ -161,9 +161,9 @@ export default function TotalPage() {
             <BudgetBar
               key={pb.person.id}
               label={pb.person.name}
-              spent={pb.totalWithdrawals + pb.totalExpenses}
+              spent={pb.totalExpenses}
               budget={pb.totalAllocated}
-              sub={`${formatEur(pb.person.monthly_budget)}/Monat · ${formatEur(pb.totalWithdrawals)} Entnahmen + ${formatEur(pb.totalExpenses)} Ausgaben`}
+              sub={`${formatEur(pb.person.monthly_budget)}/Monat · ${formatEur(pb.totalExpenses)} Ausgaben`}
             />
           ))}
           <BudgetBar

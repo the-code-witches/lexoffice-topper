@@ -119,7 +119,7 @@ export default function MonthlyPage() {
             </div>
           </section>
 
-          {/* Budgets this month */}
+          {/* Budgets this month — expenses only, withdrawals are separate */}
           <section>
             <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-4">
               Budgets {monthLabel}
@@ -129,9 +129,9 @@ export default function MonthlyPage() {
                 <BudgetBar
                   key={ps.person.id}
                   label={ps.person.name}
-                  spent={ps.withdrawals + ps.expenses}
+                  spent={ps.expenses}
                   budget={ps.budget}
-                  sub={`${formatEur(ps.withdrawals)} Entnahmen + ${formatEur(ps.expenses)} Ausgaben`}
+                  sub={`${formatEur(ps.expenses)} Ausgaben von ${formatEur(ps.budget)}`}
                 />
               ))}
               <BudgetBar
