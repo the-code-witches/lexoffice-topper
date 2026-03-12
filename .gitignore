@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local config (real data — use config.yaml.example as template)
+config.yaml
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

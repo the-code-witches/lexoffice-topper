@@ -1,0 +1,16 @@
+people:
+  - id: person1
+    name: Person 1
+    lexoffice_contact_name: Vorname Nachname
+    monthly_budget: 100
+  - id: person2
+    name: Person 2
+    lexoffice_contact_name: Vorname Nachname
+    monthly_budget: 100
+internal:
+  name: Gemeinsame Kosten
+  monthly_budget: 100
+rules: []
+vouchers: []
+withdrawals: []
+splits: []
