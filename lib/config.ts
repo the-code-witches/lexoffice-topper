@@ -33,12 +33,19 @@ export interface Withdrawal {
   note?: string;
 }
 
+export interface ExpenseSplit {
+  voucher_id: string;
+  months: number;
+  start_month: string; // "YYYY-MM"
+}
+
 export interface AppConfig {
   people: PersonConfig[];
   internal: InternalConfig;
   rules: Rule[];
   vouchers: VoucherCategorization[];
   withdrawals: Withdrawal[];
+  splits: ExpenseSplit[];
 }
 
 const CONFIG_PATH = path.join(process.cwd(), "config.yaml");
@@ -49,6 +56,7 @@ export function loadConfig(): AppConfig {
   parsed.rules = parsed.rules ?? [];
   parsed.vouchers = parsed.vouchers ?? [];
   parsed.withdrawals = parsed.withdrawals ?? [];
+  parsed.splits = parsed.splits ?? [];
   return parsed;
 }
 

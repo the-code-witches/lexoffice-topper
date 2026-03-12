@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadConfig, categorizeVoucher } from "@/lib/config";
 import { getLexofficeData } from "@/lib/data";
-import { calcKontostand, calcPersonBudgets, buildCategorizedExpenses } from "@/lib/calculations";
+import { calcKontostand, calcPersonBudgets, buildCategorizedExpenses, applyExpenseSplits } from "@/lib/calculations";
 
 export async function GET(req: NextRequest) {
   try {
@@ -52,7 +52,12 @@ export async function GET(req: NextRequest) {
       0
     );
     kontostand.taxPaid = taxExpenses.reduce((s, e) => s + e.amount, 0);
-    kontostand.totalExpenses = categorized.reduce((s, e) => s + e.amount, 0);
+    // Apply splits: spread split expenses across months, cap at current month
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const calcExpenses = applyExpenseSplits(categorized, config.splits)
+      .filter((e) => e.date.slice(0, 7) <= currentYearMonth);
+    kontostand.totalExpenses = calcExpenses.reduce((s, e) => s + e.amount, 0);
 
     const allDates = [
       ...filteredIncomeVouchers.map((v) => v.voucherDate),
@@ -61,16 +66,24 @@ export async function GET(req: NextRequest) {
     ].filter(Boolean);
 
     // For year filter, cap months elapsed at Dec of that year (or current month)
-    const now = new Date();
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const latestDate = year
       ? year < String(now.getFullYear()) ? `${year}-12` : currentYearMonth
       : undefined;
 
-    const personBudgets = calcPersonBudgets(config, categorized, allDates, latestDate, filteredWithdrawals);
-    const internalExpenses = categorized
+    const personBudgets = calcPersonBudgets(config, calcExpenses, allDates, latestDate, filteredWithdrawals);
+    const internalExpenses = calcExpenses
       .filter((e) => e.category === "internal")
       .reduce((s, e) => s + e.amount, 0);
+
+    // Build display expenses: one entry per voucher with amountForCalc = sum of
+    // portions that were included in calcExpenses (respects year filter + current month cap)
+    const calcByVoucher = new Map<string, number>();
+    for (const e of calcExpenses) {
+      calcByVoucher.set(e.voucherId, (calcByVoucher.get(e.voucherId) ?? 0) + e.amount);
+    }
+    const displayExpenses = categorized
+      .map((e) => ({ ...e, amountForCalc: calcByVoucher.get(e.voucherId) ?? e.amount }))
+      .sort((a, b) => b.date.localeCompare(a.date));
 
     return NextResponse.json({
       year,
@@ -83,7 +96,7 @@ export async function GET(req: NextRequest) {
         totalExpenses: internalExpenses,
       },
       withdrawals: filteredWithdrawals,
-      categorizedExpenses: categorized,
+      categorizedExpenses: displayExpenses,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

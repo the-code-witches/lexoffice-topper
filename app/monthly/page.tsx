@@ -4,14 +4,16 @@ import { useEffect, useState, useCallback } from "react";
 import { StatCard } from "@/components/StatCard";
 import { BudgetBar } from "@/components/BudgetBar";
 import { WithdrawalForm } from "@/components/WithdrawalForm";
+import { ExpenseTable } from "@/components/ExpenseTable";
 import { formatEur } from "@/lib/calculations";
-import type { PersonConfig, Withdrawal } from "@/lib/config";
+import type { PersonConfig, Withdrawal, ExpenseSplit } from "@/lib/config";
 import type { MonthlyPersonSummary, MonthlyInternalSummary } from "@/lib/calculations";
 
 interface CategorizedExpense {
   voucherId: string;
   category: string;
   amount: number;
+  amountForCalc?: number;
   date: string;
   contactName?: string;
   remark?: string;
@@ -51,6 +53,7 @@ export default function MonthlyPage() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [data, setData] = useState<MonthlySummary | null>(null);
   const [people, setPeople] = useState<PersonConfig[]>([]);
+  const [splits, setSplits] = useState<ExpenseSplit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -65,6 +68,7 @@ export default function MonthlyPage() {
       if (summary.error) throw new Error(summary.error);
       setData(summary);
       setPeople(config.people ?? []);
+      setSplits(config.splits ?? []);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -181,26 +185,7 @@ export default function MonthlyPage() {
                     />
                     {isExpanded && expenses.length > 0 && (
                       <div className="mt-1 rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-800 text-left">
-                              <th className="px-4 py-2 text-gray-500 font-normal">Datum</th>
-                              <th className="px-4 py-2 text-gray-500 font-normal">Lieferant</th>
-                              <th className="px-4 py-2 text-gray-500 font-normal">Notiz</th>
-                              <th className="px-4 py-2 text-gray-500 font-normal text-right">Betrag</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-800">
-                            {expenses.map((e) => (
-                              <tr key={e.voucherId} className="hover:bg-gray-800/40">
-                                <td className="px-4 py-2 text-gray-400">{e.date.slice(0, 10)}</td>
-                                <td className="px-4 py-2 text-gray-300">{e.contactName ?? "—"}</td>
-                                <td className="px-4 py-2 text-gray-500 truncate max-w-xs">{e.remark ?? "—"}</td>
-                                <td className="px-4 py-2 text-right text-gray-300">{formatEur(e.amount)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        <ExpenseTable expenses={expenses} splits={splits} onSplitChange={() => load(month)} />
                       </div>
                     )}
                     {isExpanded && expenses.length === 0 && (

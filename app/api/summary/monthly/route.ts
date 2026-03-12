@@ -5,6 +5,7 @@ import {
   calcMonthlyPersonSummaries,
   calcMonthlyInternal,
   buildCategorizedExpenses,
+  applyExpenseSplits,
 } from "@/lib/calculations";
 
 export async function GET(req: NextRequest) {
@@ -32,16 +33,17 @@ export async function GET(req: NextRequest) {
     );
 
     const expenseDetailsMap = new Map(Object.entries(expenseDetails));
+
+    // Build from ALL vouchers so splits from other months appear in this month
     const allExpenses = buildCategorizedExpenses(
-      monthExpenseVouchers,
+      expenseVouchers,
       expenseDetailsMap,
       (id, contactName, remark) => categorizeVoucher(config, id, contactName, remark)
     );
-    // "tax" category = quarterly VAT payments — separate from regular expenses
     const taxPaid = allExpenses
-      .filter((e) => e.category === "tax")
+      .filter((e) => e.category === "tax" && e.date.startsWith(month))
       .reduce((s, e) => s + e.amount, 0);
-    const categorized = allExpenses.filter(
+    const allCategorized = allExpenses.filter(
       (e): e is typeof e & { category: string } => e.category !== null && e.category !== "tax"
     );
 
@@ -51,9 +53,30 @@ export async function GET(req: NextRequest) {
       0
     );
 
-    const personSummaries = calcMonthlyPersonSummaries(config, month, categorized);
-    const internalSummary = calcMonthlyInternal(config, month, categorized);
+    // Apply splits across all time, then filter to this month for calculations
+    const calcExpenses = applyExpenseSplits(allCategorized, config.splits)
+      .filter((e) => e.date.startsWith(month));
+    const personSummaries = calcMonthlyPersonSummaries(config, month, calcExpenses);
+    const internalSummary = calcMonthlyInternal(config, month, calcExpenses);
     const monthWithdrawals = config.withdrawals.filter((w) => w.date.startsWith(month));
+
+    // Build display expenses: one entry per voucher active this month,
+    // with amountForCalc = portion used (differs from amount only for splits)
+    const splitMap = new Map(config.splits.map((s) => [s.voucher_id, s]));
+    const displayExpenses = allCategorized
+      .filter((e) => {
+        const split = splitMap.get(e.voucherId);
+        if (!split) return e.date.startsWith(month);
+        const [y, m2] = split.start_month.split("-").map(Number);
+        const endDate = new Date(y, m2 - 1 + split.months - 1, 1);
+        const endMonth = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}`;
+        return month >= split.start_month && month <= endMonth;
+      })
+      .map((e) => {
+        const split = splitMap.get(e.voucherId);
+        return { ...e, amountForCalc: split ? e.amount / split.months : e.amount };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
 
     return NextResponse.json({
       month,
@@ -64,7 +87,7 @@ export async function GET(req: NextRequest) {
       personSummaries,
       internalSummary,
       withdrawals: monthWithdrawals,
-      categorizedExpenses: categorized,
+      categorizedExpenses: displayExpenses,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

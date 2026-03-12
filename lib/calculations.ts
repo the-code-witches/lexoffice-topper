@@ -1,4 +1,4 @@
-import type { AppConfig, PersonConfig, Withdrawal } from "./config";
+import type { AppConfig, PersonConfig, Withdrawal, ExpenseSplit } from "./config";
 import type { VoucherDetail, VoucherListItem } from "./lexoffice";
 
 export interface PersonBudgetSummary {
@@ -170,6 +170,36 @@ export function formatEur(amount: number): string {
     style: "currency",
     currency: "EUR",
   }).format(amount);
+}
+
+/**
+ * Spreads split expenses across months. Each split voucher generates N entries
+ * with amount/N each, dated to the 1st of each month in the split range.
+ * Non-split expenses are returned unchanged.
+ */
+export function applyExpenseSplits(
+  expenses: { voucherId: string; category: string; amount: number; date: string; contactName?: string; remark?: string }[],
+  splits: ExpenseSplit[]
+): { voucherId: string; category: string; amount: number; date: string; contactName?: string; remark?: string }[] {
+  const splitMap = new Map(splits.map((s) => [s.voucher_id, s]));
+  const result: typeof expenses = [];
+
+  for (const expense of expenses) {
+    const split = splitMap.get(expense.voucherId);
+    if (!split) {
+      result.push(expense);
+      continue;
+    }
+    const monthlyAmount = expense.amount / split.months;
+    const [y, m] = split.start_month.split("-").map(Number);
+    for (let i = 0; i < split.months; i++) {
+      const d = new Date(y, m - 1 + i, 1);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      result.push({ ...expense, amount: monthlyAmount, date: dateStr });
+    }
+  }
+
+  return result;
 }
 
 /** Build the flat categorized expense list from voucher list + details + config. */
