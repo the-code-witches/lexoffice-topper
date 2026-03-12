@@ -34,6 +34,18 @@ function currentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function availableMonths() {
+  const months: string[] = [];
+  const start = new Date(2025, 0, 1);
+  const now = new Date();
+  const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cur <= now) {
+    months.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`);
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return months.reverse();
+}
+
 export default function MonthlyPage() {
   const [month, setMonth] = useState(currentMonth());
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -71,12 +83,17 @@ export default function MonthlyPage() {
     <div className="space-y-8">
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-semibold text-white">Monatsübersicht</h1>
-        <input
-          type="month"
+        <select
           value={month}
-          onChange={(e) => setMonth(e.target.value)}
+          onChange={(e) => { setMonth(e.target.value); setExpandedCategory(null); }}
           className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white"
-        />
+        >
+          {availableMonths().map((m) => (
+            <option key={m} value={m}>
+              {new Date(m + "-15").toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+            </option>
+          ))}
+        </select>
       </div>
 
       {loading && <p className="text-gray-500 animate-pulse">Lade {monthLabel}…</p>}
